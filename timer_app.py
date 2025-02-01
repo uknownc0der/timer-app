@@ -1,47 +1,35 @@
 import streamlit as st
 import time
 
-# Initialize session state variables if they don't exist
-if "is_running" not in st.session_state:
-    st.session_state.is_running = False
-if "is_break" not in st.session_state:
-    st.session_state.is_break = False
-if "time_left" not in st.session_state:
-    st.session_state.time_left = 1500  # Default to 25 minutes (1500 seconds)
-if "time_spent" not in st.session_state:
-    st.session_state.time_spent = 0  # Total work time in seconds
-if "break_time" not in st.session_state:
-    st.session_state.break_time = 0  # Total break time in seconds
-if "work_sessions" not in st.session_state:
-    st.session_state.work_sessions = 0  # Counter for work sessions
-
-# Set up the page layout
+# Set up the page layout and styling
 st.set_page_config(page_title="Pomodoro Timer", page_icon="⏳", layout="centered")
 
-# Custom CSS for the Pomodoro timer styling
+# Custom CSS for styling
 st.markdown("""
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            background-color: white;
+            color: black;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            font-weight: bold;
+            transition: background-color 0.5s ease;
         }
         .container {
             text-align: center;
             max-width: 400px;
             padding: 20px;
             border-radius: 10px;
-            background-color: #ffffff;
+            background-color: #f4f4f4;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: opacity 0.5s ease;
         }
         .title {
             font-size: 28px;
-            font-weight: bold;
             margin-bottom: 20px;
         }
         .time-box {
@@ -57,10 +45,14 @@ st.markdown("""
             align-items: center;
             justify-content: center;
             color: #ff6347;
+            z-index: 10;
+        }
+        .input-box {
+            margin-bottom: 20px;
         }
         .button-container {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             gap: 20px;
         }
         .button-container button {
@@ -81,81 +73,72 @@ st.markdown("""
 # Display header
 st.markdown("<div class='title'>Pomodoro Timer</div>", unsafe_allow_html=True)
 
-# Time left display
+# Initialize session state variables if they don't exist
+if "is_running" not in st.session_state:
+    st.session_state.is_running = False
+if "time_left" not in st.session_state:
+    st.session_state.time_left = 0  # Initial time left (0 means no timer running)
+
+# Format time as MM:SS
 def format_time(seconds):
     """Format seconds into mm:ss format."""
     minutes = seconds // 60
     seconds = seconds % 60
     return f"{minutes:02}:{seconds:02}"
 
-# Function to start or continue the timer
+# Start timer function with page dimming effect
 def start_timer():
-    """Start or continue the timer, depending on whether it's a work session or break."""
+    """Start or continue the timer based on the current state."""
     while st.session_state.time_left > 0 and st.session_state.is_running:
-        minutes_left, seconds_left = divmod(st.session_state.time_left, 60)
-        
-        # Update the session state time
+        # Calculate the remaining time
         st.session_state.time_left -= 1
 
-        # Update the timer display on the page
+        # Calculate the opacity based on the time left
+        opacity = max(0.1, st.session_state.time_left / 100)  # Dim the page as time approaches 0
+        page_style = f"background-color: rgba(255, 255, 255, {opacity});"
+
+        # Update the page background opacity
+        st.markdown(f'<style>body {{ {page_style} }}</style>', unsafe_allow_html=True)
+
+        # Update the timer display
         timer_display.markdown(f"<div class='time-box'>{format_time(st.session_state.time_left)}</div>", unsafe_allow_html=True)
-        
+
         # Wait for 1 second before updating the timer again
         time.sleep(1)
 
-    # When the timer ends
-    if st.session_state.time_left == 0:
-        if st.session_state.is_break:
-            st.session_state.break_time += 5 * 60  # 5 minutes break
-            st.session_state.is_break = False
-            st.session_state.time_left = work_duration * 60  # Reset to selected work duration
-            st.session_state.work_sessions += 1
-            st.success("Break's over! Time to work!")
-        else:
-            st.session_state.time_spent += work_duration * 60  # Add work session time
-            st.session_state.is_break = True
-            st.session_state.time_left = 5 * 60  # 5-minute break time
-            st.success("Time's up! Take a break!")
+    if st.session_state.time_left == 0 and st.session_state.is_running:
+        st.session_state.is_running = False
+        st.session_state.time_left = 0  # Reset time
+        st.success("Time's up!")
+
+# Input for time setting
+time_input = st.text_input("Enter time in minutes:", "25")
 
 # Timer display placeholder
 timer_display = st.empty()
 
-# Buttons for selecting work duration
-col1, col2, col3, col4 = st.columns(4)
-button_values = [10, 15, 20, 25]
-button_labels = ["10 min", "15 min", "20 min", "25 min"]
-
-for col, value, label in zip([col1, col2, col3, col4], button_values, button_labels):
-    if col.button(label):
-        work_duration = value
-        st.session_state.time_left = work_duration * 60  # Set to selected work duration
-
-# Display the timer and buttons
+# Display input and buttons
 with st.container():
-    col1, col2 = st.columns([1, 1])
+    # Input box to set timer duration
+    st.markdown("<div class='input-box'>Set Timer Duration (in minutes):</div>", unsafe_allow_html=True)
+    time_input = st.text_input("Enter time in minutes:", "25")
+    try:
+        time_duration = int(time_input) * 60  # Convert minutes to seconds
+    except ValueError:
+        time_duration = 0
 
-    with col1:
-        # Start the timer button
-        if not st.session_state.is_running:
-            if st.button("Start Timer"):
-                st.session_state.is_running = True
-                start_timer()
-        else:
-            # Stop the timer button
-            if st.button("Stop Timer"):
-                st.session_state.is_running = False
+    # Start/Stop button toggle
+    if not st.session_state.is_running:
+        if st.button("Start Timer"):
+            st.session_state.time_left = time_duration  # Set time for the timer
+            st.session_state.is_running = True
+            start_timer()
+    else:
+        if st.button("Stop Timer"):
+            st.session_state.is_running = False  # Stop the timer
 
-    with col2:
-        # Reset the timer button
-        if st.session_state.is_running and st.button("Reset Timer"):
-            st.session_state.is_running = False
-            st.session_state.time_left = work_duration * 60  # Reset to selected work duration
-            st.session_state.is_break = False
-            st.session_state.work_sessions = 0
-            st.session_state.time_spent = 0
-            st.session_state.break_time = 0
-
-# Display summary stats
-st.markdown(f"### Total Work Sessions: {st.session_state.work_sessions}")
-st.markdown(f"### Total Work Time: {format_time(st.session_state.time_spent)}")
-st.markdown(f"### Total Break Time: {format_time(st.session_state.break_time)}")
+# Additional feature for reset (optional)
+if st.button("Reset Timer"):
+    st.session_state.is_running = False
+    st.session_state.time_left = 0
+    timer_display.empty()

@@ -1,154 +1,146 @@
 import streamlit as st
 import time
+import math
 
-# Initialize session state if it doesn't exist
-if "running" not in st.session_state:
-    st.session_state.running = False
-if "total_time" not in st.session_state:
-    st.session_state.total_time = 0
-if "daily_stats" not in st.session_state:
-    st.session_state.daily_stats = {}
+# Initialize session state variables if they don't exist
+if "is_running" not in st.session_state:
+    st.session_state.is_running = False
+if "is_break" not in st.session_state:
+    st.session_state.is_break = False
+if "time_left" not in st.session_state:
+    st.session_state.time_left = 1500  # 25 minutes in seconds
+if "time_spent" not in st.session_state:
+    st.session_state.time_spent = 0  # Total work time in seconds
+if "break_time" not in st.session_state:
+    st.session_state.break_time = 0  # Total break time in seconds
+if "work_sessions" not in st.session_state:
+    st.session_state.work_sessions = 0  # Counter for work sessions
 
-def main():
-    st.set_page_config(page_title="Timer App", page_icon="⏳", layout="wide")
-    
-    # Instagram-style UI
-    st.markdown("""
-        <style>
-            body {
-                font-family: 'Arial', sans-serif;
-                background-color: #fafafa;
-                color: #262626;
-            }
-            .header {
-                font-size: 28px;
-                font-weight: bold;
-                text-align: center;
-                margin-top: 20px;
-                margin-bottom: 20px;
-            }
-            .timer-box {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 200px;
-                font-size: 48px;
-                font-weight: bold;
-                background-color: #ffffff;
-                border-radius: 15px;
-                padding: 20px;
-                text-align: center;
-                margin: auto;
-                width: 50%;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            }
-            .button-container {
-                display: flex;
-                justify-content: center;
-                gap: 20px;
-                margin-top: 20px;
-            }
-            .button-container button {
-                background-color: #0095f6;
-                color: white;
-                font-size: 18px;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 30px;
-                cursor: pointer;
-            }
-            .bottom-nav {
-                display: flex;
-                justify-content: space-around;
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background-color: #ffffff;
-                border-top: 1px solid #e6e6e6;
-                padding: 10px 0;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            }
-            .nav-item {
-                text-align: center;
-                font-size: 18px;
-                color: #0095f6;
-                cursor: pointer;
-            }
-            .nav-item:hover {
-                text-decoration: underline;
-            }
-            .active {
-                font-weight: bold;
-                color: #0078d4;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+# Set up the page layout
+st.set_page_config(page_title="Pomofocus", page_icon="⏳", layout="centered")
 
-    st.markdown("<div class='header'>Instagram Style Timer</div>", unsafe_allow_html=True)
-    
-    # Add tabs for Timer and Stats (Bottom Navigation)
-    tab_selection = st.radio("", ["Timer", "Summary", "Daily Stats"], key="nav-tabs", index=0, horizontal=True)
-    
-    if tab_selection == "Timer":
-        show_timer()
-    elif tab_selection == "Summary":
-        show_summary()
-    elif tab_selection == "Daily Stats":
-        show_daily_stats()
+# Custom CSS for the Pomodoro timer styling
+st.markdown("""
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .time-box {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            border: 10px solid #ff6347;
+            padding: 30px;
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6347;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        .button-container button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .button-container button:hover {
+            background-color: #ff4500;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-    # Bottom Navigation Bar
-    st.markdown("""
-    <div class="bottom-nav">
-        <div class="nav-item {active_class('Timer')}" onclick="window.location.href='#'">Timer</div>
-        <div class="nav-item {active_class('Summary')}" onclick="window.location.href='#'">Summary</div>
-        <div class="nav-item {active_class('Daily Stats')}" onclick="window.location.href='#'">Daily Stats</div>
-    </div>
-    """, unsafe_allow_html=True)
+# Display header
+st.markdown("<div class='title'>Pomodoro Timer</div>", unsafe_allow_html=True)
 
-def show_timer():
-    timer_choice = st.radio("Choose a timer:", ["10 minutes", "15 minutes", "20 minutes"], index=0)
-    
-    timer_map = {"10 minutes": 600, "15 minutes": 900, "20 minutes": 1200}
-    selected_time = timer_map[timer_choice]
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        if st.button("Start Timer", key="start"):
-            start_timer(selected_time)
-    
-    with col2:
-        if st.button("Stop Timer", key="stop"):
-            st.session_state.running = False
+# Time left display
+def format_time(seconds):
+    """Format seconds into mm:ss format."""
+    minutes = seconds // 60
+    seconds = seconds % 60
+    return f"{minutes:02}:{seconds:02}"
 
-def start_timer(duration):
-    st.session_state.running = True
-    
-    timer_display = st.empty()
-    
-    while duration > 0 and st.session_state.running:
-        minutes, seconds = divmod(duration, 60)
-        timer_display.markdown(f"<div class='timer-box'>{minutes:02}:{seconds:02}</div>", unsafe_allow_html=True)
-        time.sleep(1)
-        duration -= 1
-    
-    if not st.session_state.running or duration == 0:
-        timer_display.markdown("<div class='timer-box'>🎉 Time's Up!</div>", unsafe_allow_html=True)
+# Function to run the timer
+def start_timer():
+    """Start or continue the timer, depending on whether it's a work session or break."""
+    while st.session_state.time_left > 0 and st.session_state.is_running:
+        minutes_left, seconds_left = divmod(st.session_state.time_left, 60)
+        st.session_state.time_left -= 1
+
+        # Update the timer on the page
+        st.markdown(f"<div class='time-box'>{format_time(st.session_state.time_left)}</div>", unsafe_allow_html=True)
         
-        # Update total time used and daily stats
-        st.session_state.total_time += duration
-        current_date = time.strftime("%Y-%m-%d")
-        if current_date in st.session_state.daily_stats:
-            st.session_state.daily_stats[current_date] += duration
+        # Wait for 1 second before updating the timer again
+        time.sleep(1)
+        st.experimental_rerun()
+
+    # When the timer ends
+    if st.session_state.time_left == 0:
+        if st.session_state.is_break:
+            st.session_state.break_time += 5 * 60  # 5 minutes break
+            st.session_state.is_break = False
+            st.session_state.time_left = 25 * 60  # Reset to 25 minutes for work
+            st.session_state.work_sessions += 1
+            st.success("Break's over! Time to work!")
         else:
-            st.session_state.daily_stats[current_date] = duration
+            st.session_state.time_spent += 25 * 60  # 25 minutes work session
+            st.session_state.is_break = True
+            st.session_state.time_left = 5 * 60  # 5-minute break time
+            st.success("Time's up! Take a break!")
 
-def show_summary():
-    st.write("Summary coming soon...")
+# Display the timer and buttons
+with st.container():
+    col1, col2 = st.columns([1, 1])
 
-def show_daily_stats():
-    st.write("Daily stats coming soon...")
+    with col1:
+        if not st.session_state.is_running:
+            if st.button("Start Timer"):
+                st.session_state.is_running = True
+                start_timer()
+        else:
+            if st.button("Pause Timer"):
+                st.session_state.is_running = False
 
-if __name__ == "__main__":
-    main()
+    with col2:
+        if st.session_state.is_running and st.button("Reset Timer"):
+            st.session_state.is_running = False
+            st.session_state.time_left = 25 * 60  # Reset to 25 minutes
+            st.session_state.is_break = False
+            st.session_state.work_sessions = 0
+            st.session_state.time_spent = 0
+            st.session_state.break_time = 0
+
+# Display summary stats
+st.markdown(f"### Total Work Sessions: {st.session_state.work_sessions}")
+st.markdown(f"### Total Work Time: {format_time(st.session_state.time_spent)}")
+st.markdown(f"### Total Break Time: {format_time(st.session_state.break_time)}")
+

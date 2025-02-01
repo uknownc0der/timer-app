@@ -4,6 +4,10 @@ import time
 def main():
     st.set_page_config(page_title="Timer App", page_icon="⏳", layout="wide")
     
+    # Initialize session state if it doesn't exist
+    if "running" not in st.session_state:
+        st.session_state.running = False
+    
     # Twitter-style UI
     st.markdown("""
         <style>
@@ -48,8 +52,7 @@ def main():
                 cursor: pointer;
             }
         </style>
-    
-    ", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     st.markdown("<div class='title'>Select a Timer</div>", unsafe_allow_html=True)
     

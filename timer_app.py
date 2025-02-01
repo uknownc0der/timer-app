@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import numpy as np
 
 def main():
     st.set_page_config(page_title="Timer App", page_icon="⏳", layout="centered")
@@ -28,31 +27,29 @@ def main():
 
 def start_timer(duration):
     st.session_state.running = True
-    st.session_state.paused = False
     
     st.subheader("⏳ Sand Clock Timer")
     
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        if st.button("Pause/Resume"):
-            st.session_state.paused = not st.session_state.paused
+    if st.button("Stop"):
+        st.session_state.running = False
     
-    sand_clock = ["🔲" for _ in range(10)]
+    top_layer = []
+    bottom_layer = []
     
-    while duration > 0 and st.session_state.running:
-        if st.session_state.paused:
-            time.sleep(1)
-            continue
+    for _ in range(duration):
+        if not st.session_state.running:
+            break
         
-        sand_clock.insert(0, "⬤")
-        if len(sand_clock) > 10:
-            sand_clock.pop()
+        if top_layer:
+            bottom_layer.append(top_layer.pop())
+        else:
+            top_layer = ["⬤" for _ in range(10)]
         
-        st.write("\n".join(sand_clock))
+        st.write("Top:", " ".join(top_layer))
+        st.write("Bottom:", " ".join(bottom_layer))
         time.sleep(1)
-        duration -= 1
-        
-    if duration == 0:
+    
+    if not st.session_state.running or duration == 0:
         st.success("⏳ Time's Up!")
         st.session_state.log.append(f"Used {duration // 60} minutes at {time.strftime('%H:%M:%S')}")
         

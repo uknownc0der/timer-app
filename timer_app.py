@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import numpy as np
 
 def main():
     st.set_page_config(page_title="Timer App", page_icon="⏳", layout="centered")
@@ -36,13 +37,18 @@ def start_timer(duration):
         if st.button("Pause/Resume"):
             st.session_state.paused = not st.session_state.paused
     
+    sand_clock = ["🔲" for _ in range(10)]
+    
     while duration > 0 and st.session_state.running:
         if st.session_state.paused:
             time.sleep(1)
             continue
         
-        mins, secs = divmod(duration, 60)
-        st.write(f"Time Left: {mins:02d}:{secs:02d}")
+        sand_clock.insert(0, "⬤")
+        if len(sand_clock) > 10:
+            sand_clock.pop()
+        
+        st.write("\n".join(sand_clock))
         time.sleep(1)
         duration -= 1
         

@@ -17,22 +17,29 @@ def main():
 def start_timer(duration):
     st.session_state.running = True
     
-    st.subheader("🕹️ Tetris Timer")
+    st.subheader("⏳ Timer Box")
     
     if st.button("Stop"):
         st.session_state.running = False
     
-    tetris_grid = []
+    grid_size = 10  # Box width limit
+    box = [["⬜" for _ in range(grid_size)] for _ in range(grid_size)]
+    filled_cells = 0
+    total_cells = grid_size * grid_size
     
-    for sec in range(1, duration + 1):
-        if not st.session_state.running:
-            break
+    container = st.empty()
+    
+    while filled_cells < total_cells and filled_cells < duration and st.session_state.running:
+        row = filled_cells // grid_size
+        col = filled_cells % grid_size
+        box[row][col] = "⬛"
+        filled_cells += 1
         
-        tetris_grid.append("⬛")  # Representing seconds as blocks
-        st.write(" ".join(tetris_grid))
+        box_display = "\n".join([" ".join(row) for row in box])
+        container.write(f"```{box_display}```")
         time.sleep(1)
     
-    if not st.session_state.running or duration == 0:
+    if not st.session_state.running or filled_cells >= duration:
         st.success("🎉 Time's Up!")
         
 if __name__ == "__main__":

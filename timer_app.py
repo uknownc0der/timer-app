@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import matplotlib.pyplot as plt
 
 # Initialize session state if it doesn't exist
 if "running" not in st.session_state:
@@ -58,25 +57,38 @@ def main():
                 border-radius: 30px;
                 cursor: pointer;
             }
-            .tab-button {
+            .bottom-nav {
+                display: flex;
+                justify-content: space-around;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: #ffffff;
+                border-top: 1px solid #e6e6e6;
+                padding: 10px 0;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            .nav-item {
+                text-align: center;
                 font-size: 18px;
                 color: #0095f6;
-                border: none;
-                background: none;
                 cursor: pointer;
-                margin: 0 10px;
             }
-            .tab-button:hover {
+            .nav-item:hover {
                 text-decoration: underline;
+            }
+            .active {
+                font-weight: bold;
+                color: #0078d4;
             }
         </style>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='header'>Instagram Style Timer</div>", unsafe_allow_html=True)
     
-    # Add tabs for Timer and Stats
-    tabs = ["Timer", "Summary", "Daily Stats"]
-    tab_selection = st.radio("Select a tab", tabs)
+    # Add tabs for Timer and Stats (Bottom Navigation)
+    tab_selection = st.radio("", ["Timer", "Summary", "Daily Stats"], key="nav-tabs", index=0, horizontal=True)
     
     if tab_selection == "Timer":
         show_timer()
@@ -84,6 +96,15 @@ def main():
         show_summary()
     elif tab_selection == "Daily Stats":
         show_daily_stats()
+
+    # Bottom Navigation Bar
+    st.markdown("""
+    <div class="bottom-nav">
+        <div class="nav-item {active_class('Timer')}" onclick="window.location.href='#'">Timer</div>
+        <div class="nav-item {active_class('Summary')}" onclick="window.location.href='#'">Summary</div>
+        <div class="nav-item {active_class('Daily Stats')}" onclick="window.location.href='#'">Daily Stats</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def show_timer():
     timer_choice = st.radio("Choose a timer:", ["10 minutes", "15 minutes", "20 minutes"], index=0)
@@ -124,33 +145,10 @@ def start_timer(duration):
             st.session_state.daily_stats[current_date] = duration
 
 def show_summary():
-    # Create a simple line graph showing total time spent
-    times = list(st.session_state.daily_stats.values())
-    dates = list(st.session_state.daily_stats.keys())
-    
-    if times:
-        plt.figure(figsize=(10, 6))
-        plt.plot(dates, times, marker='o', color='b', label='Time spent (seconds)')
-        plt.xlabel('Date')
-        plt.ylabel('Time spent (seconds)')
-        plt.title('Summary of Time Used')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        st.pyplot(plt)
-    else:
-        st.write("No data available for the summary.")
+    st.write("Summary coming soon...")
 
 def show_daily_stats():
-    # Show daily stats in a table
-    daily_stats_df = list(st.session_state.daily_stats.items())
-    
-    if daily_stats_df:
-        st.write("### Daily Time Usage Stats")
-        st.write("Date | Time Used (seconds)")
-        for date, time_used in daily_stats_df:
-            st.write(f"{date} | {time_used} seconds")
-    else:
-        st.write("No daily stats available.")
+    st.write("Daily stats coming soon...")
 
 if __name__ == "__main__":
     main()

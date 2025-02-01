@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import math
 
 # Initialize session state variables if they don't exist
 if "is_running" not in st.session_state:
@@ -8,7 +7,7 @@ if "is_running" not in st.session_state:
 if "is_break" not in st.session_state:
     st.session_state.is_break = False
 if "time_left" not in st.session_state:
-    st.session_state.time_left = 1500  # 25 minutes in seconds
+    st.session_state.time_left = 1500  # Default to 25 minutes (1500 seconds)
 if "time_spent" not in st.session_state:
     st.session_state.time_spent = 0  # Total work time in seconds
 if "break_time" not in st.session_state:
@@ -17,7 +16,7 @@ if "work_sessions" not in st.session_state:
     st.session_state.work_sessions = 0  # Counter for work sessions
 
 # Set up the page layout
-st.set_page_config(page_title="Pomofocus", page_icon="⏳", layout="centered")
+st.set_page_config(page_title="Pomodoro Timer", page_icon="⏳", layout="centered")
 
 # Custom CSS for the Pomodoro timer styling
 st.markdown("""
@@ -89,33 +88,40 @@ def format_time(seconds):
     seconds = seconds % 60
     return f"{minutes:02}:{seconds:02}"
 
-# Function to run the timer
+# Function to start or continue the timer
 def start_timer():
     """Start or continue the timer, depending on whether it's a work session or break."""
     while st.session_state.time_left > 0 and st.session_state.is_running:
         minutes_left, seconds_left = divmod(st.session_state.time_left, 60)
+        
+        # Update the session state time
         st.session_state.time_left -= 1
 
-        # Update the timer on the page
-        st.markdown(f"<div class='time-box'>{format_time(st.session_state.time_left)}</div>", unsafe_allow_html=True)
+        # Update the timer display on the page
+        timer_display.markdown(f"<div class='time-box'>{format_time(st.session_state.time_left)}</div>", unsafe_allow_html=True)
         
         # Wait for 1 second before updating the timer again
         time.sleep(1)
-        st.experimental_rerun()
 
     # When the timer ends
     if st.session_state.time_left == 0:
         if st.session_state.is_break:
             st.session_state.break_time += 5 * 60  # 5 minutes break
             st.session_state.is_break = False
-            st.session_state.time_left = 25 * 60  # Reset to 25 minutes for work
+            st.session_state.time_left = work_duration * 60  # Reset to selected work duration
             st.session_state.work_sessions += 1
             st.success("Break's over! Time to work!")
         else:
-            st.session_state.time_spent += 25 * 60  # 25 minutes work session
+            st.session_state.time_spent += work_duration * 60  # Add work session time
             st.session_state.is_break = True
             st.session_state.time_left = 5 * 60  # 5-minute break time
             st.success("Time's up! Take a break!")
+
+# Timer display placeholder
+timer_display = st.empty()
+
+# Timer duration selection
+work_duration = st.selectbox("Select Work Duration:", [10, 15, 20, 25], index=3)
 
 # Display the timer and buttons
 with st.container():
@@ -125,6 +131,7 @@ with st.container():
         if not st.session_state.is_running:
             if st.button("Start Timer"):
                 st.session_state.is_running = True
+                st.session_state.time_left = work_duration * 60  # Set to selected work duration
                 start_timer()
         else:
             if st.button("Pause Timer"):
@@ -133,7 +140,7 @@ with st.container():
     with col2:
         if st.session_state.is_running and st.button("Reset Timer"):
             st.session_state.is_running = False
-            st.session_state.time_left = 25 * 60  # Reset to 25 minutes
+            st.session_state.time_left = work_duration * 60  # Reset to selected work duration
             st.session_state.is_break = False
             st.session_state.work_sessions = 0
             st.session_state.time_spent = 0
@@ -143,4 +150,3 @@ with st.container():
 st.markdown(f"### Total Work Sessions: {st.session_state.work_sessions}")
 st.markdown(f"### Total Work Time: {format_time(st.session_state.time_spent)}")
 st.markdown(f"### Total Break Time: {format_time(st.session_state.break_time)}")
-

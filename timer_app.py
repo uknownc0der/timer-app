@@ -17,30 +17,19 @@ def main():
 def start_timer(duration):
     st.session_state.running = True
     
-    st.subheader("⏳ Timer Box")
+    timer_display = st.empty()
     
     if st.button("Stop"):
         st.session_state.running = False
     
-    grid_size = 10  # Box width limit
-    box = [["⬜" for _ in range(grid_size)] for _ in range(grid_size)]
-    filled_cells = 0
-    total_cells = grid_size * grid_size
-    
-    container = st.empty()
-    
-    while filled_cells < total_cells and filled_cells < duration and st.session_state.running:
-        row = filled_cells // grid_size
-        col = filled_cells % grid_size
-        box[row][col] = "⬛"
-        filled_cells += 1
-        
-        box_display = "\n".join([" ".join(row) for row in box])
-        container.write(f"```{box_display}```")
+    while duration > 0 and st.session_state.running:
+        minutes, seconds = divmod(duration, 60)
+        timer_display.markdown(f"# {minutes:02}:{seconds:02}", unsafe_allow_html=True)
         time.sleep(1)
+        duration -= 1
     
-    if not st.session_state.running or filled_cells >= duration:
-        st.success("🎉 Time's Up!")
+    if not st.session_state.running or duration == 0:
+        timer_display.markdown("# 🎉 Time's Up!", unsafe_allow_html=True)
         
 if __name__ == "__main__":
     main()

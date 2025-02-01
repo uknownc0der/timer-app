@@ -120,24 +120,33 @@ def start_timer():
 # Timer display placeholder
 timer_display = st.empty()
 
-# Timer duration selection
-work_duration = st.selectbox("Select Work Duration:", [10, 15, 20, 25], index=3)
+# Buttons for selecting work duration
+col1, col2, col3, col4 = st.columns(4)
+button_values = [10, 15, 20, 25]
+button_labels = ["10 min", "15 min", "20 min", "25 min"]
+
+for col, value, label in zip([col1, col2, col3, col4], button_values, button_labels):
+    if col.button(label):
+        work_duration = value
+        st.session_state.time_left = work_duration * 60  # Set to selected work duration
 
 # Display the timer and buttons
 with st.container():
     col1, col2 = st.columns([1, 1])
 
     with col1:
+        # Start the timer button
         if not st.session_state.is_running:
             if st.button("Start Timer"):
                 st.session_state.is_running = True
-                st.session_state.time_left = work_duration * 60  # Set to selected work duration
                 start_timer()
         else:
-            if st.button("Pause Timer"):
+            # Stop the timer button
+            if st.button("Stop Timer"):
                 st.session_state.is_running = False
 
     with col2:
+        # Reset the timer button
         if st.session_state.is_running and st.button("Reset Timer"):
             st.session_state.is_running = False
             st.session_state.time_left = work_duration * 60  # Reset to selected work duration
